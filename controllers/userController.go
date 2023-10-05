@@ -47,13 +47,13 @@ func Register() gin.HandlerFunc {
 		var user models.User
 
 		if err := c.BindJSON(&user); err != nil {
-			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+			c.JSON(http.StatusBadRequest, gin.H{"status": "error", "message": err.Error()})
 			return
 		}
 
 		validationErr := validate.Struct(user)
 		if validationErr != nil {
-			c.JSON(http.StatusBadRequest, gin.H{"error": validationErr.Error()})
+			c.JSON(http.StatusBadRequest, gin.H{"status": "error", "message": validationErr.Error()})
 			return
 		}
 
@@ -61,7 +61,12 @@ func Register() gin.HandlerFunc {
 		defer cancel()
 		if err != nil {
 			log.Panic(err)
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "error occured while checking for the email"})
+			c.JSON(http.StatusInternalServerError, gin.H{"status": "error", "message": err.Error()})
+		}
+
+		if count > 0 {
+			c.JSON(http.StatusConflict, gin.H{"status": "error", "message": "Email already exists"})
+			return
 		}
 
 		password := HashPassword(*user.Password)
@@ -71,10 +76,10 @@ func Register() gin.HandlerFunc {
 		defer cancel()
 		if err != nil {
 			log.Panic(err)
-			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			c.JSON(http.StatusInternalServerError, gin.H{"status": "error", "message": err.Error()})
 		}
 		if count > 0 {
-			c.JSON(http.StatusConflict, gin.H{"error": "Username already exists"})
+			c.JSON(http.StatusConflict, gin.H{"status": "error", "message": "Username already exists"})
 			return
 		}
 
@@ -85,14 +90,21 @@ func Register() gin.HandlerFunc {
 		token, refreshToken, _ := helper.GenerateAllTokens(*user.Email, *user.FirstName, *user.LastName, *user.Role, user.UserID)
 		user.Token = &token
 		user.RefreshToken = &refreshToken
-		resultInsertionNumber, insertErr := userCollection.InsertOne(ctx, user)
+		_, insertErr := userCollection.InsertOne(ctx, user)
 		if insertErr != nil {
-			msg := fmt.Sprintf("User Item was not created: %v", insertErr)
-			c.JSON(http.StatusInternalServerError, gin.H{"error": msg})
+			c.JSON(http.StatusInternalServerError, gin.H{"status": "error", "message": "An error occurred while creating user account"})
 			return
 		}
 		defer cancel()
-		c.JSON(http.StatusOK, resultInsertionNumber)
+		c.JSON(http.StatusCreated, gin.H{
+			"status": "success",
+			"data": gin.H{
+				"userId":   user.UserID,
+				"email":    user.Email,
+				"username": user.Username,
+				"message":  "Account created successfully",
+			},
+		})
 	}
 }
 
@@ -116,19 +128,19 @@ func Login() gin.HandlerFunc {
 		passwordIsValid, msg := VerifyPassword(*user.Password, *foundUser.Password)
 		defer cancel()
 		if passwordIsValid != true {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": msg})
+			c.JSON(http.StatusInternalServerError, gin.H{"status": "error", "message": msg})
 			return
 		}
 
 		if foundUser.Email == nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "Email is incorrect"})
+			c.JSON(http.StatusInternalServerError, gin.H{"status": "error", "message": "Email or password is incorrect"})
 		}
 		token, refreshToken, _ := helper.GenerateAllTokens(*foundUser.Email, *foundUser.FirstName, *foundUser.LastName, *foundUser.Role, foundUser.UserID)
 		helper.UpdateAllTokens(token, refreshToken, foundUser.UserID)
 		err = userCollection.FindOne(ctx, bson.M{"userID": foundUser.UserID}).Decode(&foundUser)
 
 		if err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			c.JSON(http.StatusInternalServerError, gin.H{"status": "error", "message": "Email or password is incorrect"})
 			return
 		}
 		c.JSON(http.StatusOK, foundUser)
