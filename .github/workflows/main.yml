@@ -7,6 +7,7 @@ on:
       - staging
     tags:
       - "release-*"
+  workflow_dispatch:
 
 jobs:
   dev:
