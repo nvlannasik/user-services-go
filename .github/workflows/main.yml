@@ -11,8 +11,8 @@ on:
 jobs:
   dev:
     if: github.ref == 'refs/heads/dev'
-    uses: nvlannasik/github-action-manifest/.github/workflows/dev-cicd.yml@master
+    uses: nvlannasik/github-action-manifest/dev-cicd.yml@master
 
   staging:
     if: github.ref == 'refs/heads/staging'
-    uses: nvlannasik/github-action-manifest/.github/workflows/staging-cicd.yml@master
+    uses: nvlannasik/github-action-manifest/staging-cicd.yml@master
