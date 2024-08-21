@@ -8,11 +8,6 @@ on:
     tags:
       - "release-*"
   workflow_dispatch:
-    # inputs:
-    #   dockerfile_name:
-    #     description: 'Name of the Dockerfile (e.g., go.Dockerfile, node.Dockerfile)'
-    #     required: true
-    #     default: 'go.Dockerfile'
 
 env:
   DOCKERFILE_NAME: "go.Dockerfile"
@@ -21,7 +16,11 @@ jobs:
   dev:
     if: github.ref == 'refs/heads/dev'
     uses: nvlannasik/github-action-manifest/.github/workflows/dev-cicd.yml@master
+    with:
+      dockerfile_name: ${{ env.DOCKERFILE_NAME }}
 
   staging:
     if: github.ref == 'refs/heads/staging'
     uses: nvlannasik/github-action-manifest/.github/workflows/staging-cicd.yml@master
+    with:
+      dockerfile_name: ${{ env.DOCKERFILE_NAME }}
