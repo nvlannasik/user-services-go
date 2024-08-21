@@ -15,9 +15,13 @@ jobs:
     uses: nvlannasik/github-action-manifest/.github/workflows/dev-cicd.yml@master
     with:
       dockerfile_name: "go.Dockerfile"
+    secrets:
+      GH_TOKEN: ${{ secrets.GH_TOKEN }}
 
   staging:
     if: github.ref == 'refs/heads/staging'
     uses: nvlannasik/github-action-manifest/.github/workflows/staging-cicd.yml@master
     with:
       dockerfile_name: "go.Dockerfile"
+    secrets:
+      GH_TOKEN: ${{ secrets.GH_TOKEN }}
